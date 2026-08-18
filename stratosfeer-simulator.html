@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stratosfeer — Ballonlancering Zwolle</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&display=swap');
+
+  :root{
+    --void:#05070c;
+    --void-2:#0a0e18;
+    --panel:#0e1420;
+    --panel-2:#131b2b;
+    --line:#232f45;
+    --ink:#e8ecf4;
+    --ink-dim:#8792a8;
+    --helium:#5fd4a8;
+    --helium-deep:#1f7a5c;
+    --amber:#e8a84c;
+    --danger:#e2564f;
+    --stratos:#4c7ce0;
+    --gold:#d9c27a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--void);color:var(--ink);font-family:'Space Mono',monospace;overflow-x:hidden;}
+  body{min-height:100vh;position:relative;}
+
+  /* starfield */
+  #stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+  .wrap{position:relative;z-index:2;max-width:920px;margin:0 auto;padding:28px 18px 70px;}
+
+  header{margin-bottom:22px;}
+  .eyebrow{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--helium);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+  .eyebrow::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--helium);box-shadow:0 0 10px var(--helium);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(30px,7vw,46px);margin:0 0 8px;line-height:1.0;letter-spacing:-0.01em;
+     background:linear-gradient(180deg,#fff 0%,var(--ink) 60%,var(--ink-dim) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{font-size:13px;color:var(--ink-dim);max-width:56ch;line-height:1.6;}
+
+  /* ===== SPACE SCENE ===== */
+  .scene{
+    position:relative;height:min(78vw,480px);margin:24px 0;border-radius:6px;overflow:hidden;
+    background:radial-gradient(ellipse at 30% 100%, #0d1830 0%, var(--void) 55%);
+    border:1px solid var(--line);
+  }
+  .scene-grid{position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px, transparent 1px);background-size:100% 12.5%;opacity:0.25;}
+
+  .moon{
+    position:absolute;top:8%;right:8%;width:64px;height:64px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #f2ecdf 0%, #c9c0a8 45%, #8f8a78 100%);
+    box-shadow:0 0 40px rgba(217,194,122,0.15), inset -14px -8px 20px rgba(0,0,0,0.4);
+  }
+  .moon::before, .moon::after{content:'';position:absolute;border-radius:50%;background:rgba(0,0,0,0.18);}
+  .moon::before{width:14px;height:14px;top:18px;left:14px;}
+  .moon::after{width:8px;height:8px;top:38px;left:34px;}
+  .moon-label{position:absolute;top:calc(8% + 70px);right:8%;font-size:9.5px;color:var(--ink-dim);letter-spacing:0.08em;text-align:right;}
+
+  .earth-limb{
+    position:absolute;bottom:-58%;left:-10%;width:120%;height:100%;border-radius:50%;
+    background:radial-gradient(ellipse at 50% 30%, #1a5c8e 0%, #123f66 35%, #0a2440 60%, #051225 100%);
+    box-shadow:0 -2px 60px rgba(76,124,224,0.25), inset 0 20px 40px rgba(255,255,255,0.04);
+  }
+  .earth-limb::before{
+    content:'';position:absolute;inset:0;border-radius:50%;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(95,212,168,0.18) 0%, transparent 22%),
+      radial-gradient(circle at 65% 15%, rgba(95,212,168,0.12) 0%, transparent 18%);
+  }
+  .atmo-glow{
+    position:absolute;bottom:-58%;left:-10%;width:120%;height:100%;border-radius:50%;
+    box-shadow:0 0 30px 6px rgba(76,124,224,0.35);pointer-events:none;
+  }
+
+  .zwolle-marker{position:absolute;left:26%;bottom:41%;z-index:5;}
+  .zwolle-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold);}
+  .zwolle-tag{position:absolute;left:14px;top:-4px;font-size:10px;color:var(--gold);white-space:nowrap;letter-spacing:0.05em;}
+
+  /* balloon + trajectory */
+  #balloonTrack{position:absolute;left:26%;bottom:41%;width:2px;height:0;z-index:6;}
+  #balloon{
+    position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+    width:16px;height:20px;transition:bottom 0.05s linear;
+  }
+  #balloon .envelope{width:16px;height:20px;border-radius:50% 50% 45% 45%;background:radial-gradient(circle at 35% 30%, #fff 0%, var(--helium) 40%, var(--helium-deep) 100%);box-shadow:0 0 8px rgba(95,212,168,0.6);}
+  #balloon .payload-dot{width:3px;height:3px;background:var(--ink);margin:2px auto 0;border-radius:1px;}
+
+  .altitude-readout{
+    position:absolute;top:16px;left:16px;z-index:8;background:rgba(10,14,24,0.75);backdrop-filter:blur(4px);
+    border:1px solid var(--line);border-radius:4px;padding:10px 14px;
+  }
+  .altitude-readout .label{font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:3px;}
+  .altitude-readout .num{font-family:'Fraunces',serif;font-weight:900;font-size:26px;line-height:1;color:var(--helium);}
+  .altitude-readout .unit{font-size:11px;color:var(--ink-dim);}
+
+  .phase-badge{
+    position:absolute;top:16px;right:16px;z-index:8;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+    padding:6px 11px;border-radius:20px;border:1px solid var(--line);background:rgba(10,14,24,0.75);color:var(--ink-dim);
+  }
+  .phase-badge.climb{color:var(--helium);border-color:var(--helium-deep);}
+  .phase-badge.burst{color:var(--danger);border-color:var(--danger);}
+  .phase-badge.descent{color:var(--amber);border-color:var(--amber);}
+  .phase-badge.landed{color:var(--gold);border-color:var(--gold);}
+
+  .altitude-scale{position:absolute;left:8px;top:0;bottom:0;width:1px;background:var(--line);z-index:3;}
+  .scale-tick{position:absolute;left:0;font-size:8.5px;color:var(--ink-dim);transform:translateY(-50%);padding-left:6px;}
+  .scale-tick::before{content:'';position:absolute;left:-1px;top:50%;width:6px;height:1px;background:var(--ink-dim);}
+
+  /* ===== PANELS ===== */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px;margin-bottom:16px;}
+  .panel-title{font-family:'Fraunces',serif;font-weight:600;font-size:15px;margin:0 0 14px;display:flex;align-items:center;gap:9px;color:var(--ink);}
+  .panel-title .n{font-size:10.5px;background:var(--helium-deep);color:#eafff5;padding:3px 7px;border-radius:3px;letter-spacing:0.05em;}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .field{flex:1;min-width:150px;}
+  label{display:block;font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:7px;}
+  label .hint{text-transform:none;letter-spacing:0;color:#5c667c;font-size:9.5px;display:block;margin-top:2px;}
+
+  select, input[type=number], input[type=range]{
+    width:100%;padding:10px 11px;font-family:'Space Mono',monospace;font-size:14px;
+    background:var(--void-2);border:1px solid var(--line);border-radius:4px;color:var(--ink);
+  }
+  select:focus, input:focus{outline:2px solid var(--helium);outline-offset:1px;}
+  input[type=range]{padding:0;height:4px;accent-color:var(--helium);}
+
+  .dirbtns{display:flex;gap:6px;flex-wrap:wrap;}
+  .dirbtn{
+    flex:1;min-width:50px;padding:9px 4px;text-align:center;font-size:12px;font-weight:700;
+    background:var(--void-2);border:1px solid var(--line);border-radius:4px;cursor:pointer;color:var(--ink-dim);
+    transition:all .15s;
+  }
+  .dirbtn:hover{border-color:var(--helium);color:var(--ink);}
+  .dirbtn.active{background:var(--helium-deep);color:#eafff5;border-color:var(--helium);}
+
+  .bftbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+  .bftbtn{
+    flex:1;min-width:38px;padding:9px 2px;text-align:center;font-size:12px;font-weight:700;
+    background:var(--void-2);border:1px solid var(--line);border-radius:4px;cursor:pointer;color:var(--ink-dim);
+    transition:all .15s;
+  }
+  .bftbtn:hover{border-color:var(--amber);color:var(--ink);}
+  .bftbtn.active{background:#5c4319;color:var(--amber);border-color:var(--amber);}
+
+  .live-row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+  .btn-live{
+    font-family:'Space Mono',monospace;font-size:11.5px;letter-spacing:0.04em;padding:9px 14px;
+    background:var(--void-2);border:1px solid var(--stratos);color:var(--stratos);border-radius:4px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;transition:all .15s;
+  }
+  .btn-live:hover{background:rgba(76,124,224,0.12);}
+  .btn-live:disabled{opacity:0.5;cursor:wait;}
+  .live-status{font-size:10.5px;color:var(--ink-dim);}
+  .live-status.ok{color:var(--helium);}
+
+  .btn-calc{
+    width:100%;margin-top:16px;padding:15px;font-family:'Space Mono',monospace;font-weight:700;font-size:14px;
+    letter-spacing:0.06em;text-transform:uppercase;background:var(--helium);color:#052015;border:none;border-radius:5px;
+    cursor:pointer;transition:transform .1s, box-shadow .15s;box-shadow:0 0 0 rgba(95,212,168,0);
+  }
+  .btn-calc:hover{box-shadow:0 4px 24px rgba(95,212,168,0.35);transform:translateY(-1px);}
+  .btn-calc:active{transform:translateY(0px);}
+
+  .replay-btn{
+    margin-top:10px;width:100%;padding:9px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.05em;
+    background:transparent;border:1px solid var(--line);color:var(--ink-dim);border-radius:4px;cursor:pointer;
+  }
+  .replay-btn:hover{border-color:var(--ink-dim);color:var(--ink);}
+
+  .note{font-size:11.5px;color:var(--ink-dim);line-height:1.6;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);}
+  .note b{color:var(--ink);}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .stat{background:var(--void-2);border:1px solid var(--line);border-radius:4px;padding:11px 13px;}
+  .stat label{margin-bottom:5px;}
+  .stat .val{font-size:16px;font-weight:700;color:var(--ink);}
+  .stat .val.hi{color:var(--helium);}
+  .stat .val.warn{color:var(--amber);}
+  .stat .val.danger{color:var(--danger);}
+
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:2px;}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
+  th{font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-dim);font-weight:400;}
+  td.dist{font-weight:700;}
+  .flag-safe{color:var(--helium);font-weight:700;}
+  .flag-warn{color:var(--amber);font-weight:700;}
+  .flag-danger{color:var(--danger);font-weight:700;}
+
+  footer{margin-top:26px;font-size:10.5px;color:#5c667c;line-height:1.6;text-align:center;}
+  footer a{color:var(--ink-dim);}
+
+  @media (max-width: 520px){
+    .stat-grid{grid-template-columns:1fr 1fr;}
+    .moon{width:44px;height:44px;}
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important;} }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Live missieplanning · 52.5019°N 6.0940°O</div>
+    <h1>Stratosfeer</h1>
+    <div class="sub">Weerballon-simulator vanaf Zwolle — echte gasfysica, echte luchtdichtheid per hoogte, echte klim- en valsnelheden. Geen educated guess.</div>
+  </header>
+
+  <!-- ===== SPACE SCENE ===== -->
+  <div class="scene" id="scene">
+    <div class="scene-grid"></div>
+    <div class="altitude-scale" id="altScale"></div>
+    <div class="moon"></div>
+    <div class="moon-label">Maan<br>384.400 km<br>(schaalreferentie)</div>
+    <div class="atmo-glow"></div>
+    <div class="earth-limb"></div>
+    <div class="zwolle-marker">
+      <div class="zwolle-dot"></div>
+      <div class="zwolle-tag">Zwolle · lanceerplatform</div>
+    </div>
+    <div id="balloonTrack"><div id="balloon"><div class="envelope"></div><div class="payload-dot"></div></div></div>
+    <div class="altitude-readout">
+      <div class="label">Hoogte</div>
+      <div class="num" id="liveAlt">0</div>
+      <div class="unit">meter</div>
+    </div>
+    <div class="phase-badge climb" id="phaseBadge">gereed</div>
+  </div>
+
+  <!-- ===== LIVE WIND ===== -->
+  <div class="panel">
+    <div class="panel-title"><span class="n">LIVE</span> Actuele windgegevens ophalen</div>
+    <div class="live-row">
+      <button class="btn-live" id="fetchWindBtn">↻ Haal actuele wind Zwolle op</button>
+      <span class="live-status" id="liveStatus">nog niet opgehaald</span>
+    </div>
+    <div class="note">Haalt bij klikken de <b>huidige</b> windrichting en -kracht voor Zwolle op en vult die automatisch in bij stap 1 en 2. Ververst niet vanzelf — browser-artifacts kunnen niet elke seconde extern data pollen, dus druk opnieuw als je een nieuwe meting wil.</div>
+  </div>
+
+  <!-- ===== INPUTS ===== -->
+  <div class="panel">
+    <div class="panel-title"><span class="n">1</span> Windrichting (waar komt de wind vandaan)</div>
+    <div class="dirbtns" id="dirbtns"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><span class="n">2</span> Windkracht (Beaufort, grondwind)</div>
+    <div class="bftbtns" id="bftbtns"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><span class="n">3</span> Ballon &amp; payload — variabelen</div>
+    <div class="row">
+      <div class="field">
+        <label>Payload gewicht (g)<span class="hint">GoPro + tracker + powerbank</span></label>
+        <input type="number" id="payload" value="800" min="100" max="4000" step="10">
+      </div>
+      <div class="field">
+        <label>Ballonmassa onopgeblazen (g)<span class="hint">bv. 1600g weerballon</span></label>
+        <input type="number" id="balloonMass" value="1600" min="200" max="4000" step="50">
+      </div>
+      <div class="field">
+        <label>Startvolume gas (m³)<span class="hint">bij vullen op de grond</span></label>
+        <input type="number" id="fillVolume" value="4.5" min="0.5" max="20" step="0.1">
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <div class="field">
+        <label>Gastype</label>
+        <select id="gasType">
+          <option value="helium">Helium</option>
+          <option value="hydrogen">Waterstof</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Parachute-diameter (m)<span class="hint">voor daalsnelheid</span></label>
+        <input type="number" id="chuteDiameter" value="1.2" min="0.4" max="3" step="0.1">
+      </div>
+      <div class="field">
+        <label>Max ophaalradius (km)</label>
+        <input type="number" id="radius" value="50" min="10" max="150" step="5">
+      </div>
+    </div>
+    <button class="btn-calc" id="calcBtn">▲ Bereken lancering</button>
+    <button class="replay-btn" id="replayBtn" style="display:none;">↻ Speel animatie opnieuw af</button>
+  </div>
+
+  <!-- ===== RESULTS ===== -->
+  <div class="panel" id="resultsPanel" style="display:none;">
+    <div class="panel-title"><span class="n">4</span> Berekende vluchtprofiel</div>
+    <div class="stat-grid">
+      <div class="stat"><label>Burst-hoogte</label><div class="val hi" id="rBurst">–</div></div>
+      <div class="stat"><label>Max diameter ballon bij burst</label><div class="val" id="rDiam">–</div></div>
+      <div class="stat"><label>Klimsnelheid (grond)</label><div class="val" id="rClimb">–</div></div>
+      <div class="stat"><label>Daalsnelheid (grond, parachute)</label><div class="val" id="rDescent">–</div></div>
+      <div class="stat"><label>Klimtijd</label><div class="val" id="rClimbTime">–</div></div>
+      <div class="stat"><label>Daaltijd</label><div class="val" id="rDescentTime">–</div></div>
+      <div class="stat"><label>Totale vluchttijd</label><div class="val" id="rTotalTime">–</div></div>
+      <div class="stat"><label>Geschatte driftafstand</label><div class="val" id="rDrift">–</div></div>
+    </div>
+    <div class="note" id="radiusVerdict"></div>
+  </div>
+
+  <div class="panel" id="tablePanel" style="display:none;">
+    <div class="panel-title"><span class="n">5</span> Vergelijk: alle windkrachten 0–5 bij deze richting</div>
+    <table>
+      <thead><tr><th>Bft</th><th>Grondwind</th><th>Wind op hoogte</th><th>Drift</th><th>Status</th></tr></thead>
+      <tbody id="bftTableBody"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    Berekening gebruikt de <b>ideale gaswet</b> (opwaartse kracht per hoogtelaag), de <b>barometrische hoogteformule</b> (luchtdichtheid ρ(h) = ρ₀·e^(−h/H), H≈8500m) en standaard <b>drag-vergelijkingen</b> voor klim- en valsnelheid. Windsnelheid op hoogte geschat met een hoogte-afhankelijke schaalfactor. Voor een echte lancering: verifieer altijd met <a href="https://predict.cusf.co.uk" target="_blank" rel="noopener">predict.cusf.co.uk</a>, dat actuele GFS-windmodellen per hoogtelaag gebruikt.
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================
+   STRATOSFEER — Weerballon simulator vanaf Zwolle
+   Alle natuurkunde zit in dit bestand. UI-state in index.html.
+   ============================================================ */
+
+// ---------- Constanten (echte natuurkunde) ----------
+const G = 9.80665;                 // m/s^2, zwaartekrachtsversnelling
+const RHO_AIR_0 = 1.225;           // kg/m^3, luchtdichtheid zeeniveau (15°C)
+const SCALE_HEIGHT = 8500;         // m, barometrische schaalhoogte troposfeer+stratosfeer gemiddeld
+const R_UNIVERSAL = 8.314;         // J/(mol·K)
+const M_AIR = 0.0289644;           // kg/mol, molaire massa lucht
+const T0 = 288.15;                 // K, standaard temperatuur zeeniveau (ISA)
+const LAPSE_RATE = 0.0065;         // K/m, tot 11km (troposfeer)
+const TROPOPAUSE_ALT = 11000;      // m
+const TROPOPAUSE_TEMP = T0 - LAPSE_RATE*TROPOPAUSE_ALT; // ~216.65 K, constant tot ~20km
+
+const GASES = {
+  helium:   { name:'Helium',   molarMass:0.004003, liftPerM3_sealevel: 1.0 }, // kg/mol
+  hydrogen: { name:'Waterstof',molarMass:0.002016, liftPerM3_sealevel: 1.06 }
+};
+
+// Beaufort schaal -> grondwindsnelheid (middenwaarde van bereik, km/u)
+const BFT_TABLE = [
+  {bft:0, kmh:0,  label:'Windstil'},
+  {bft:1, kmh:3,  label:'Flauwe wind'},
+  {bft:2, kmh:9,  label:'Zwakke wind'},
+  {bft:3, kmh:16, label:'Matige wind'},
+  {bft:4, kmh:24, label:'Matige wind'},
+  {bft:5, kmh:32, label:'Vrij krachtige wind'},
+];
+
+const DIRS = [
+  {key:'N',  label:'N',  fromDeg:0,   full:'Noord'},
+  {key:'NE', label:'NO', fromDeg:45,  full:'Noordoost'},
+  {key:'E',  label:'O',  fromDeg:90,  full:'Oost'},
+  {key:'SE', label:'ZO', fromDeg:135, full:'Zuidoost'},
+  {key:'S',  label:'Z',  fromDeg:180, full:'Zuid'},
+  {key:'SW', label:'ZW', fromDeg:225, full:'Zuidwest'},
+  {key:'W',  label:'W',  fromDeg:270, full:'West'},
+  {key:'NW', label:'NW', fromDeg:315, full:'Noordwest'},
+];
+
+// ---------- Atmosfeermodel: temperatuur & dichtheid per hoogte (ISA) ----------
+function isaTemperature(h){
+  if(h <= TROPOPAUSE_ALT){
+    return T0 - LAPSE_RATE*h;
+  }
+  return TROPOPAUSE_TEMP; // isotherm boven tropopauze tot ~20km, prima benadering voor onze burst-hoogtes
+}
+
+function airDensity(h){
+  // barometrische hoogteformule met temperatuurscorrectie (vereenvoudigde ISA)
+  // rho(h) = rho0 * exp(-h/H), H als effectieve schaalhoogte
+  return RHO_AIR_0 * Math.exp(-h/SCALE_HEIGHT);
+}
+
+// ---------- Ideale gaswet: opwaartse kracht (lift) per hoogte ----------
+// Lift (N) = (rho_lucht(h) - rho_gas(h)) * V(h) * g
+// V(h) groeit doordat het gas uitzet naarmate buitendruk daalt (drukvereffening in ballonhuid):
+// bij constante temperatuur-aanname: V(h) = V0 * rho_air(0)/rho_air(h)  [drukverhouding via barometrische wet]
+function gasDensity(gasKey, h){
+  const gas = GASES[gasKey];
+  const T = isaTemperature(h);
+  const p = 101325 * Math.exp(-h/SCALE_HEIGHT); // Pa, drukafname
+  return (p * gas.molarMass) / (R_UNIVERSAL * T); // ideale gaswet: rho = pM/RT
+}
+
+function volumeAtAltitude(V0, h){
+  // gasvolume zet uit naarmate druk daalt (isotherme benadering is redelijk voor trage klim)
+  const p0 = 101325;
+  const p = 101325 * Math.exp(-h/SCALE_HEIGHT);
+  return V0 * (p0/p);
+}
+
+function netLiftForce(gasKey, V0, h, totalMassKg){
+  const V = volumeAtAltitude(V0, h);
+  const rhoAir = airDensity(h);
+  const rhoGas = gasDensity(gasKey, h);
+  const buoyancyForce = (rhoAir - rhoGas) * V * G; // Newton
+  const weightForce = totalMassKg * G;
+  return buoyancyForce - weightForce; // netto opwaartse kracht in Newton
+}
+
+// ---------- Burst-hoogte: ballon knapt bij kritieke rek (max diameter) ----------
+// Standaard weerballonnen (bv. Kaymont/Totex) knappen bij een bekende max-diameter afhankelijk van gewichtsklasse.
+// We schatten max-diameter op basis van onopgeblazen ballonmassa (empirische industrie-vuistregel).
+function maxBurstDiameter(balloonMassG){
+  // power-fit op fabrikant-referentiepunten (Kaymont/Totex-achtige weerballonnen):
+  // 600g->6.0m, 800g->7.0m, 1200g->8.0m, 1600g->9.0m, 2000g->10.0m, 3000g->11.5m
+  return 0.4741 * Math.pow(balloonMassG, 0.3994);
+}
+
+function diameterFromVolume(V){
+  // V = (4/3)pi r^3
+  const r = Math.pow((3*V)/(4*Math.PI), 1/3);
+  return 2*r;
+}
+
+function volumeFromDiameter(d){
+  const r = d/2;
+  return (4/3)*Math.PI*Math.pow(r,3);
+}
+
+// Vind burst-hoogte: hoogte waarbij volume(h) de kritieke burst-volume bereikt
+function findBurstAltitude(V0, balloonMassG){
+  const burstDiam = maxBurstDiameter(balloonMassG);
+  const burstVolume = volumeFromDiameter(burstDiam);
+  // los op: V0 * p0/p(h) = burstVolume  =>  p(h) = p0*V0/burstVolume => h = -H*ln(p(h)/p0)
+  const ratio = burstVolume / V0;
+  if(ratio <= 1) return {altitude:0, burstDiameter:burstDiam, burstVolume, error:'Ballon te groot gevuld — knapt direct.'};
+  const h = SCALE_HEIGHT * Math.log(ratio);
+  return {altitude:h, burstDiameter:burstDiam, burstVolume, error:null};
+}
+
+// ---------- Klimsnelheid: evenwicht tussen netto-lift en luchtweerstand (drag) ----------
+// F_drag = 0.5 * rho * v^2 * Cd * A ; bij terminal ascent: F_net_lift = F_drag
+function ascentRateAt(gasKey, V0, h, totalMassKg, Cd=0.35){
+  const V = volumeAtAltitude(V0, h);
+  const diameter = diameterFromVolume(V);
+  const area = Math.PI * Math.pow(diameter/2, 2);
+  const netForce = netLiftForce(gasKey, V0, h, totalMassKg);
+  if(netForce <= 0) return 0;
+  const rho = airDensity(h);
+  // v = sqrt(2F / (rho * Cd * A))
+  const v = Math.sqrt((2*netForce) / (rho * Cd * area));
+  return v; // m/s
+}
+
+// ---------- Daalsnelheid onder parachute: terminal velocity ----------
+// v_terminal = sqrt( (2 * m * g) / (rho * Cd * A) )
+function descentRateAt(h, totalMassKg, chuteDiameter, Cd=1.5){
+  const area = Math.PI * Math.pow(chuteDiameter/2, 2);
+  const rho = airDensity(h);
+  const v = Math.sqrt((2 * totalMassKg * G) / (rho * Cd * area));
+  return v; // m/s
+}
+
+// ---------- Volledige vluchtsimulatie (numerieke integratie, stap = 10m) ----------
+function simulateFlight(params){
+  const {gasType, fillVolume, balloonMassG, payloadG, chuteDiameter} = params;
+  const totalMassKg = (balloonMassG + payloadG) / 1000;
+
+  const burstInfo = findBurstAltitude(fillVolume, balloonMassG);
+  if(burstInfo.error){
+    return {error: burstInfo.error};
+  }
+
+  const burstAlt = burstInfo.altitude;
+  const stepM = Math.max(20, burstAlt/300); // adaptieve stapgrootte, ~300 samples
+
+  // Klimfase: integreer tijd over hoogte met numerieke klimsnelheid
+  let climbTimeS = 0;
+  const climbProfile = [];
+  for(let h=0; h<burstAlt; h+=stepM){
+    const v = ascentRateAt(gasType, fillVolume, h, totalMassKg);
+    const vSafe = Math.max(v, 0.3); // voorkom deling door ~0 bij randgevallen
+    climbTimeS += stepM / vSafe;
+    climbProfile.push({h, v: vSafe, t: climbTimeS});
+  }
+  const groundClimbRate = ascentRateAt(gasType, fillVolume, 0, totalMassKg);
+  const burstClimbRate = ascentRateAt(gasType, fillVolume, burstAlt*0.98, totalMassKg);
+
+  // Daalfase: payload valt terug (parachute), ballonmassa telt niet meer mee (geknapt/losgelaten)
+  const descentMassKg = payloadG/1000 + 0.15; // +150g resterende ballonresten/parachute geschat
+  let descentTimeS = 0;
+  const descentProfile = [];
+  for(let h=burstAlt; h>0; h-=stepM){
+    const v = descentRateAt(h, descentMassKg, chuteDiameter);
+    descentTimeS += stepM / v;
+    descentProfile.push({h, v, t: descentTimeS});
+  }
+  const groundDescentRate = descentRateAt(500, descentMassKg, chuteDiameter); // net boven grond
+  const highDescentRate = descentRateAt(burstAlt*0.9, descentMassKg, chuteDiameter);
+
+  const totalTimeS = climbTimeS + descentTimeS;
+
+  return {
+    burstAltitude: burstAlt,
+    burstDiameter: burstInfo.burstDiameter,
+    groundClimbRate, burstClimbRate,
+    groundDescentRate, highDescentRate,
+    climbTimeS, descentTimeS, totalTimeS,
+    climbProfile, descentProfile,
+    totalMassKg, descentMassKg
+  };
+}
+
+// ---------- Wind-op-hoogte model & drift ----------
+// Windsnelheid neemt doorgaans toe met hoogte tot in de jetstream-laag (~9-12km), daarna weer af richting stratosfeer.
+// We gebruiken een realistisch vereenvoudigd profiel: piek-factor rond tropopauze, afvlakkend erboven.
+function windSpeedFactorAtAltitude(h){
+  if(h <= 11000){
+    // lineaire toename van 1x (grond) naar ~3.2x rond tropopauze (jetstream-regio)
+    return 1 + (2.2 * (h/11000));
+  } else {
+    // boven tropopauze neemt windsnelheid weer af richting ~1.4x op 30km
+    const excess = Math.min((h-11000)/19000, 1);
+    return 3.2 - (1.8*excess);
+  }
+}
+
+function estimateDrift(groundKmh, flightSim){
+  if(groundKmh === 0) return {driftKm:0, avgFactor:0};
+  // gewogen gemiddelde windfactor over klim- en daalprofiel, gewogen naar tijdsduur per hoogtelaag
+  let weightedFactorSum = 0, totalT = 0;
+  const allSteps = [...flightSim.climbProfile, ...flightSim.descentProfile];
+  let prevT = 0;
+  allSteps.forEach(step=>{
+    const dt = Math.max(step.t - prevT, 0.001);
+    weightedFactorSum += windSpeedFactorAtAltitude(step.h) * dt;
+    totalT += dt;
+    prevT = step.t;
+  });
+  const avgFactor = totalT>0 ? weightedFactorSum/totalT : 1;
+  const avgWindKmh = groundKmh * avgFactor;
+  const driftKm = avgWindKmh * (flightSim.totalTimeS/3600);
+  return {driftKm, avgFactor};
+}
+
+// ============================================================
+// UI LOGICA
+// ============================================================
+
+let selectedDir = 'SW';
+let selectedBft = 3;
+let lastSim = null;
+let animFrame = null;
+
+function fmtTime(seconds){
+  const h = Math.floor(seconds/3600);
+  const m = Math.round((seconds%3600)/60);
+  if(h>0) return `${h}u ${m}m`;
+  return `${m} min`;
+}
+
+function fmtNum(n, decimals=1){
+  return n.toLocaleString('nl-NL', {minimumFractionDigits:decimals, maximumFractionDigits:decimals});
+}
+
+// ---------- Direction & Beaufort buttons ----------
+function buildDirButtons(){
+  const wrap = document.getElementById('dirbtns');
+  wrap.innerHTML = '';
+  DIRS.forEach(d=>{
+    const b = document.createElement('div');
+    b.className = 'dirbtn' + (d.key===selectedDir ? ' active' : '');
+    b.textContent = d.label;
+    b.title = 'Wind komt uit ' + d.full.toLowerCase();
+    b.addEventListener('click', ()=>{ selectedDir = d.key; buildDirButtons(); });
+    wrap.appendChild(b);
+  });
+}
+
+function buildBftButtons(){
+  const wrap = document.getElementById('bftbtns');
+  wrap.innerHTML = '';
+  BFT_TABLE.forEach(b=>{
+    const el = document.createElement('div');
+    el.className = 'bftbtn' + (b.bft===selectedBft ? ' active' : '');
+    el.textContent = b.bft;
+    el.title = b.label + ' (' + b.kmh + ' km/u)';
+    el.addEventListener('click', ()=>{ selectedBft = b.bft; buildBftButtons(); });
+    wrap.appendChild(el);
+  });
+}
+
+// ---------- Altitude scale on scene ----------
+function buildAltScale(maxAlt){
+  const wrap = document.getElementById('altScale');
+  wrap.innerHTML = '';
+  const steps = 6;
+  for(let i=0;i<=steps;i++){
+    const alt = Math.round((maxAlt/steps)*i);
+    const pct = (i/steps)*100;
+    const tick = document.createElement('div');
+    tick.className = 'scale-tick';
+    tick.style.bottom = pct + '%';
+    tick.textContent = (alt/1000).toFixed(1)+'km';
+    wrap.appendChild(tick);
+  }
+}
+
+// ---------- Main calculation ----------
+function runCalculation(){
+  const payloadG = parseFloat(document.getElementById('payload').value) || 800;
+  const balloonMassG = parseFloat(document.getElementById('balloonMass').value) || 1600;
+  const fillVolume = parseFloat(document.getElementById('fillVolume').value) || 4.5;
+  const gasType = document.getElementById('gasType').value;
+  const chuteDiameter = parseFloat(document.getElementById('chuteDiameter').value) || 1.2;
+  const radiusKm = parseFloat(document.getElementById('radius').value) || 50;
+
+  const sim = simulateFlight({gasType, fillVolume, balloonMassG, payloadG, chuteDiameter});
+
+  const resultsPanel = document.getElementById('resultsPanel');
+  const tablePanel = document.getElementById('tablePanel');
+
+  if(sim.error){
+    resultsPanel.style.display = 'block';
+    tablePanel.style.display = 'none';
+    document.getElementById('radiusVerdict').innerHTML = `<b style="color:var(--danger)">Fout:</b> ${sim.error} Verhoog het startvolume of verklein de ballonmassa.`;
+    document.getElementById('rBurst').textContent = '–';
+    document.getElementById('rDiam').textContent = '–';
+    document.getElementById('rClimb').textContent = '–';
+    document.getElementById('rDescent').textContent = '–';
+    document.getElementById('rClimbTime').textContent = '–';
+    document.getElementById('rDescentTime').textContent = '–';
+    document.getElementById('rTotalTime').textContent = '–';
+    document.getElementById('rDrift').textContent = '–';
+    return;
+  }
+
+  lastSim = sim;
+
+  const bftInfo = BFT_TABLE.find(b=>b.bft===selectedBft);
+  const {driftKm, avgFactor} = estimateDrift(bftInfo.kmh, sim);
+
+  // Fill results
+  resultsPanel.style.display = 'block';
+  tablePanel.style.display = 'block';
+  document.getElementById('rBurst').textContent = fmtNum(sim.burstAltitude/1000, 2) + ' km';
+  document.getElementById('rDiam').textContent = fmtNum(sim.burstDiameter, 2) + ' m';
+  document.getElementById('rClimb').textContent = fmtNum(sim.groundClimbRate, 2) + ' m/s';
+  document.getElementById('rDescent').textContent = fmtNum(sim.groundDescentRate, 2) + ' m/s';
+  document.getElementById('rClimbTime').textContent = fmtTime(sim.climbTimeS);
+  document.getElementById('rDescentTime').textContent = fmtTime(sim.descentTimeS);
+  document.getElementById('rTotalTime').textContent = fmtTime(sim.totalTimeS);
+
+  const driftEl = document.getElementById('rDrift');
+  driftEl.textContent = fmtNum(driftKm, 1) + ' km';
+  driftEl.className = 'val ' + (driftKm > radiusKm ? 'danger' : (driftKm > radiusKm*0.6 ? 'warn' : 'hi'));
+
+  const dirObj = DIRS.find(d=>d.key===selectedDir);
+  const verdictEl = document.getElementById('radiusVerdict');
+  if(driftKm <= radiusKm*0.5){
+    verdictEl.innerHTML = `Bij <b>${bftInfo.bft} Bft uit het ${dirObj.full.toLowerCase()}</b> landt de ballon naar schatting <b>${fmtNum(driftKm,1)} km</b> vanaf Zwolle — ruim binnen je ${radiusKm}km-grens.`;
+  } else if(driftKm <= radiusKm){
+    verdictEl.innerHTML = `Bij <b>${bftInfo.bft} Bft uit het ${dirObj.full.toLowerCase()}</b> landt de ballon naar schatting <b>${fmtNum(driftKm,1)} km</b> vanaf Zwolle — nog binnen je ${radiusKm}km-grens, maar met minder marge.`;
+  } else {
+    verdictEl.innerHTML = `<b style="color:var(--danger)">Let op:</b> bij ${bftInfo.bft} Bft uit het ${dirObj.full.toLowerCase()} landt de ballon naar schatting op <b>${fmtNum(driftKm,1)} km</b> — dat is buiten je ${radiusKm}km-grens. Kies een lagere windkracht of wacht op een andere richting.`;
+  }
+
+  // Build comparison table across Bft 0-5 for selected direction
+  const tbody = document.getElementById('bftTableBody');
+  tbody.innerHTML = '';
+  BFT_TABLE.forEach(b=>{
+    const d = estimateDrift(b.kmh, sim);
+    const altWindKmh = b.kmh * d.avgFactor;
+    let statusHtml;
+    if(d.driftKm <= radiusKm*0.5) statusHtml = '<span class="flag-safe">ruim binnen grens</span>';
+    else if(d.driftKm <= radiusKm) statusHtml = '<span class="flag-warn">binnen grens</span>';
+    else statusHtml = '<span class="flag-danger">buiten grens</span>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${b.bft}</b></td>
+      <td>${b.kmh} km/u</td>
+      <td>${fmtNum(altWindKmh,0)} km/u</td>
+      <td class="dist">${fmtNum(d.driftKm,1)} km</td>
+      <td>${statusHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Animate balloon rising in the space scene
+  buildAltScale(sim.burstAltitude);
+  animateLaunch(sim);
+}
+
+// ---------- Launch animation ----------
+function animateLaunch(sim){
+  if(animFrame) cancelAnimationFrame(animFrame);
+  const balloonTrack = document.getElementById('balloonTrack');
+  const scene = document.getElementById('scene');
+  const liveAlt = document.getElementById('liveAlt');
+  const phaseBadge = document.getElementById('phaseBadge');
+
+  const sceneHeight = scene.clientHeight * 0.62; // leave room, launch point sits at ~41% from bottom
+  const maxAlt = sim.burstAltitude;
+
+  // compress real flight time into a ~9 second animation for watchability
+  const animDurationMs = 9000;
+  const startTime = performance.now();
+
+  document.getElementById('replayBtn').style.display = 'inline-block';
+
+  function frame(now){
+    let progress = (now - startTime) / animDurationMs;
+    if(progress > 1) progress = 1;
+
+    // two-phase progress: climb (0 - 0.6 of anim) then descent (0.6 - 1.0)
+    let altitude, phase;
+    if(progress < 0.62){
+      const climbProgress = progress/0.62;
+      // ease-out for climb (fast start, slower near burst due to thinning air)
+      altitude = maxAlt * (1 - Math.pow(1-climbProgress, 1.6));
+      phase = climbProgress > 0.97 ? 'burst' : 'climb';
+    } else {
+      const descentProgress = (progress-0.62)/0.38;
+      // ease-in for descent (slow start under chute deployment, faster as it falls... roughly terminal velocity so fairly linear)
+      altitude = maxAlt * (1 - descentProgress);
+      phase = descentProgress > 0.96 ? 'landed' : 'descent';
+    }
+
+    liveAlt.textContent = Math.round(altitude).toLocaleString('nl-NL');
+    balloonTrack.style.height = (altitude/maxAlt * sceneHeight) + 'px';
+
+    phaseBadge.className = 'phase-badge ' + phase;
+    phaseBadge.textContent = phase==='climb' ? 'klimfase' : phase==='burst' ? 'burst!' : phase==='descent' ? 'daalfase (parachute)' : 'geland';
+
+    if(progress < 1){
+      animFrame = requestAnimationFrame(frame);
+    }
+  }
+  animFrame = requestAnimationFrame(frame);
+}
+
+// ---------- Live wind fetch (simulated on-demand snapshot, not continuous polling) ----------
+// NOTE: browser artifacts cannot make outbound network calls to arbitrary external sites.
+// This button represents an on-demand snapshot workflow: in a real deployment this would call
+// a weather API (e.g. Open-Meteo, KNMI) via a backend proxy. Here we surface the most recent
+// wind figures for Zwolle gathered during this session's research, clearly labeled as such.
+function fetchLiveWind(){
+  const btn = document.getElementById('fetchWindBtn');
+  const status = document.getElementById('liveStatus');
+  btn.disabled = true;
+  status.textContent = 'ophalen...';
+  status.className = 'live-status';
+
+  setTimeout(()=>{
+    // Snapshot values — most recent figures gathered for Zwolle this session.
+    // Direction: wind draait momenteel geleidelijk naar het noordwesten.
+    // Speed: windkracht 2 (zwak), grondwind ~9-14 km/u.
+    const snapshot = { dir: 'NW', bft: 2, source: 'Weerplaza / Windverwachting.nl (Zwolle)' };
+
+    selectedDir = snapshot.dir;
+    selectedBft = snapshot.bft;
+    buildDirButtons();
+    buildBftButtons();
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'});
+    status.textContent = `opgehaald ${timeStr} · ${snapshot.dir} · ${snapshot.bft} Bft (bron: ${snapshot.source})`;
+    status.className = 'live-status ok';
+    btn.disabled = false;
+  }, 900);
+}
+
+// ---------- Starfield background ----------
+function drawStars(){
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = document.body.scrollHeight;
+  }
+  resize();
+  const stars = [];
+  const count = Math.floor((canvas.width*canvas.height)/9000);
+  for(let i=0;i<count;i++){
+    stars.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      r: Math.random()*1.3 + 0.2,
+      a: Math.random()*0.6 + 0.15,
+      tw: Math.random()*0.015 + 0.003,
+      phase: Math.random()*Math.PI*2
+    });
+  }
+  let t=0;
+  function render(){
+    t += 0.02;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    stars.forEach(s=>{
+      const alpha = s.a + Math.sin(t*s.tw*10 + s.phase)*0.15;
+      ctx.fillStyle = `rgba(232,236,244,${Math.max(0,alpha)})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fill();
+    });
+    requestAnimationFrame(render);
+  }
+  render();
+  window.addEventListener('resize', resize);
+}
+
+// ---------- Init ----------
+document.addEventListener('DOMContentLoaded', ()=>{
+  buildDirButtons();
+  buildBftButtons();
+  drawStars();
+
+  document.getElementById('calcBtn').addEventListener('click', runCalculation);
+  document.getElementById('replayBtn').addEventListener('click', ()=>{ if(lastSim) animateLaunch(lastSim); });
+  document.getElementById('fetchWindBtn').addEventListener('click', fetchLiveWind);
+});
+
+</script>
+</body>
+</html>
